@@ -1,15 +1,16 @@
 // include
 const express = require('express');
 const ejs = require('ejs');
+const path = require('path');
 const port = 3000;
 const app = express();
 const mongoose = require('mongoose');
 require('dotenv').config();
 
 // Express config
-app.use(express.static("./public"));
-app.use(express.urlencoded({extended:true}))
-app.use(express.json())
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.urlencoded({extended:true}));
+app.use(express.json());
 app.set("view engine", "ejs");
 
 // MongoDB connection
@@ -37,6 +38,10 @@ app.get("/", async (req, res) => {
 })
 .get("/add_post", (req, res) => {
     res.render("add_post");
+})
+.get("/post/:id", async (req, res) => {
+    var post = await PostModel.findById({_id: req.params.id})
+    res.render("post", {post});
 });
 
 // POST
