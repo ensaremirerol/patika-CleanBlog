@@ -2,52 +2,53 @@
 const express = require('express');
 const ejs = require('ejs');
 const path = require('path');
-const port = 3000;
-const app = express();
 const mongoose = require('mongoose');
+const methodOverride = require('method-override');
+const postController = require('./controller/postController');
+const pageController = require('./controller/pageController');
 require('dotenv').config();
+const app = express();
+
 
 // Express config
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.urlencoded({extended:true}));
+app.use(express.urlencoded({
+    extended: true
+}));
 app.use(express.json());
+app.use(methodOverride('_method'));
 app.set("view engine", "ejs");
 
+const mongooseOptions = {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    useFindAndModify: false,
+    useCreateIndex: true,
+    useUnifiedTopology: true
+}
 // MongoDB connection
-mongoose.connect(process.env.HOST_NAME, {useNewUrlParser: true, useUnifiedTopology: true});
+mongoose.connect(process.env.HOST_NAME, mongooseOptions);
 var db = mongoose.connection;
 db.on('error', console.error.bind(console, 'Database Connection ERROR:'));
 
-// MongoDB schema and models
-var postSchema = mongoose.Schema(
-    {
-        title: String,
-        detail: String,
-        dateCreated: {type: Date, default: Date.now()}
-    }
-);
-var PostModel = mongoose.model('Post', postSchema);
-
 // GET
-app.get("/", async (req, res) => {
-    var posts = await PostModel.find({})
-    res.render("index", {posts});
-})
-.get("/about", (req, res) => {
-    res.render("about");
-})
-.get("/add_post", (req, res) => {
-    res.render("add_post");
-})
-.get("/post/:id", async (req, res) => {
-    var post = await PostModel.findById({_id: req.params.id})
-    res.render("post", {post});
-});
+app
+    .get("/", pageController.renderIndex)
+    .get("/about", pageController.renderAbout)
+    .get("/add_post", postController.renderAddPost)
+    .get("/post/:id", postController.getPost)
+    .get("/post/:id/edit", postController.getEditPage);
 
 // POST
-app.post("/post", async (req,res) => {
-    await PostModel.create(req.body);
-    res.redirect("/");
-});
+app
+.post("/post", postController.createPost);
 
-app.listen(port, () => console.log(`Sunucu ${port} da başladı`));
+// PUT
+app
+.put("/post/:id/edit", postController.updatePost);
+
+// DELETE
+app.delete("/post/:id", postController.deletePost);
+
+
+app.listen(process.env.PORT, () => console.log(`Sunucu ${process.env.PORT} da başladı`));
